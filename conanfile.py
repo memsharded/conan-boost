@@ -1,6 +1,6 @@
 from conans import ConanFile
 from conans import tools
-import platform, os, sys
+import platform, os, sys, StringIO
 
 
 class BoostConan(ConanFile):
@@ -74,6 +74,16 @@ class BoostConan(ConanFile):
         if self.settings.compiler == "Visual Studio":
             flags.append("toolset=msvc-%s.0" % self.settings.compiler.version)
         elif str(self.settings.compiler) in ["clang", "gcc"]:
+            if self.settings.os == "Linux" and self.settings.compiler == "clang":
+                try:
+                    buf = StringIO.StringIO()
+                    self.run("clang++ --version", buf)
+                except:
+                    raise Exception("You must have clang++ in your path")
+                buf_out = buf.getvalue()
+                if str(self.settings.compiler.version) not in buf_out:
+                    raise Exception("Incorrect clang++ version. Requested=%s, System=%s"
+                                    % (str(self.settings.compiler.version), buf_out))
             flags.append("toolset=%s"% self.settings.compiler)
 
         flags.append("link=%s" % ("static" if not self.options.shared else "shared"))
